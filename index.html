@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Equipes em Turno Elcop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Quadro de despacho: faixa zebrada, cabeçalho, tela dividida SKY | MULTSKIL, rodapé com gráfico por hora */
+:root{
+  --bg:#101214; --panel:#16191c; --panel2:#1e2226; --line:#2a3036;
+  --fg:#eef1f3; --muted:#9aa3ab; --accent:#f5b81c; --accent-ink:#1a1405;
+  --sky:#4fb3f0; --sky-bg:#0f1d28; --sky-tile:#16293a; --sky-sub:#7f9db3; --sky-dim:#5b7487;
+  --mult:#b48cf2; --mult-bg:#1a1426; --mult-tile:#261d38; --mult-sub:#9b88bd; --mult-dim:#6e5f88;
+  --bad:#ef5350; --ok:#3fcf8e;
+  --f-disp:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Barlow",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.4}
+.tela{min-height:100%;display:flex;flex-direction:column}
+.zebra{height:12px;background:repeating-linear-gradient(135deg,var(--accent) 0 22px,var(--bg) 22px 44px);flex:none}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding:16px max(16px,2vw)}
+.tit{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 22px;min-width:0}
+h1{margin:0;font-family:var(--f-disp);font-weight:800;font-size:clamp(30px,2.7vw,52px);line-height:1;text-transform:uppercase;letter-spacing:.02em}
+.resumo{font-size:clamp(15px,1.05vw,21px);color:var(--muted)}
+.resumo b{color:var(--fg);font-family:var(--f-mono)}
+.dir{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.live{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--muted)}
+.live i{width:10px;height:10px;border-radius:50%;background:var(--bad)}
+.live[data-ok="1"] i{background:var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.hora{font-family:var(--f-mono);font-weight:700;font-size:clamp(34px,2.9vw,56px);line-height:1;color:var(--accent)}
+.btn{font:600 15px var(--f-body);border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:11px 18px;border-radius:6px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;justify-content:center}
+.btn.pri{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,transparent);background:transparent}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,.opt:focus-within,input:focus-visible,.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.aviso{margin:0 max(16px,2vw) 12px;background:color-mix(in srgb,var(--accent) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);border-radius:8px;padding:10px 14px;font-size:15px}
+
+.metades{flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.metades{grid-template-columns:1fr}}
+.metade{padding:24px max(16px,1.8vw);display:flex;flex-direction:column;gap:20px;min-width:0}
+.metade.sky{background:var(--sky-bg);border-top:6px solid var(--sky);--c:var(--sky);--hole:var(--sky-bg)}
+.metade.mult{background:var(--mult-bg);border-top:6px solid var(--mult);--c:var(--mult);--hole:var(--mult-bg)}
+.mh{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.mh-t{font-family:var(--f-disp);font-weight:700;font-size:clamp(22px,1.8vw,34px);letter-spacing:.08em;color:var(--c)}
+.mh-n{font-family:var(--f-disp);font-weight:800;font-size:clamp(96px,10vw,190px);line-height:.82;color:#fff;font-variant-numeric:tabular-nums}
+.mh-n small{font-size:.32em;font-weight:600}
+.sky .mh-n small{color:var(--sky-dim)} .mult .mh-n small{color:var(--mult-dim)}
+.mh .ic{width:clamp(150px,15.6vw,300px);height:auto}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;align-content:start}
+.tile{border:0;border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;text-align:left;color:var(--fg);font:inherit;cursor:pointer;width:100%}
+.sky .tile{background:var(--sky-tile)} .mult .tile{background:var(--mult-tile)}
+.tile:hover{filter:brightness(1.15)}
+.tile .n{font-family:var(--f-mono);font-weight:700;font-size:clamp(20px,1.36vw,26px);letter-spacing:.01em}
+.tile .h{font-family:var(--f-mono);font-size:15px}
+.sky .tile .h{color:var(--sky-sub)} .mult .tile .h{color:var(--mult-sub)}
+.vazio{color:var(--muted);font-size:17px}
+
+footer{display:flex;align-items:center;gap:22px;padding:10px max(16px,2vw);background:#0a0b0c;flex-wrap:wrap}
+.f-lbl{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.chart{flex:1;min-width:280px;overflow-x:auto}
+.chart svg{display:block;width:100%;min-width:560px;height:auto;max-height:84px}
+.prox{font-size:17px;color:var(--muted);white-space:nowrap}
+.prox b{color:var(--fg);font-family:var(--f-mono)}
+
+.tile.extra{box-shadow:inset 0 0 0 2px var(--accent)}
+.tag{align-self:flex-start;font:700 12px var(--f-body);letter-spacing:.06em;text-transform:uppercase;background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:2px 6px;margin-top:4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-p{font-size:clamp(15px,1.05vw,20px);color:var(--muted);margin-top:8px}
+.mh-p .falta{color:#ff8a65}
+.mh-acc{display:inline-block;margin-top:8px;font-size:clamp(15px,1.05vw,20px);color:var(--fg);background:rgba(255,255,255,.07);border-radius:5px;padding:4px 10px}
+.mh-acc b{font-family:var(--f-mono)}
+.mh-x{font-family:var(--f-disp);font-weight:700;font-size:clamp(18px,1.4vw,28px);color:var(--accent);margin-top:6px}
+.extra-box{display:grid;gap:14px;border:1px dashed var(--accent);border-radius:8px;padding:14px}
+select{font:600 17px var(--f-body);background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:12px;width:100%}
+.ic{display:block;flex:none}
+.ic .f{fill:var(--c)} .ic .hh{fill:var(--hole)} .ic .bm{stroke:var(--c);stroke-width:6;fill:none;stroke-linecap:round}
+.opt{--hole:var(--panel2)} .opt.sky{--c:var(--sky)} .opt.mult{--c:var(--mult)}
+.lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+/* gaveta do formulário */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:flex;justify-content:flex-end}
+.dw{background:var(--panel);width:min(460px,100%);height:100%;overflow:auto;border-left:1px solid var(--line);
+  padding:calc(20px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 20px;display:grid;gap:18px;align-content:start}
+.dw-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dw-h h2{font-family:var(--f-disp);font-size:28px;margin:0}
+form{display:grid;gap:16px}
+.fld{display:grid;gap:6px}
+.fld label,.fld legend{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+input[type=text],input[type=time]{font:600 20px var(--f-mono);background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:12px;width:100%}
+#fPref{text-transform:uppercase}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+fieldset{border:0;margin:0;padding:0;display:grid;gap:6px;min-width:0}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{position:relative;border:2px solid var(--line);border-radius:8px;background:var(--panel2);padding:12px;display:grid;justify-items:center;gap:6px;cursor:pointer}
+.opt input{position:absolute;opacity:0;pointer-events:none}
+.opt .ic{width:100%;max-width:120px;height:auto}
+.opt span{font-family:var(--f-disp);font-weight:700;font-size:20px;letter-spacing:.04em}
+.opt.sky:has(input:checked){border-color:var(--sky)} .opt.mult:has(input:checked){border-color:var(--mult)}
+.opt:has(input:checked) span{color:var(--c)}
+.hint{font-size:13px;color:var(--muted)}
+.err{font-size:13px;color:var(--bad);min-height:1em}
+.lista{display:grid;gap:8px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel2);border-radius:6px;padding:8px 10px}
+.li b{font-family:var(--f-mono)} .li small{color:var(--muted);font-family:var(--f-mono)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:6px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="tela">
+  <div class="zebra" aria-hidden="true"></div>
+  <header>
+    <div class="tit">
+      <h1>Equipes Emergenciais</h1>
+      <span class="resumo" id="resumo"></span>
+    </div>
+    <div class="dir">
+      <div class="live" id="live" data-ok="0"><i></i><span>Conectando…</span></div>
+      <div class="hora" id="hora">--:--</div>
+      <button class="btn" id="bExtra" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+        Equipe extra
+      </button>
+      <button class="btn pri" id="bAbrir" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+        Abrir turno
+      </button>
+    </div>
+  </header>
+  <div class="aviso" id="avisoDb" hidden></div>
+  <main class="metades" id="metades"></main>
+  <footer>
+    <span class="f-lbl">Por hora</span>
+    <div class="chart" id="chart" title="Barras: turnos abertos (azul SKY, roxo MULTSKIL; apagado = previsto pela escala). Linha amarela: abertos no dia, incluindo fechados."></div>
+    <span class="prox" id="prox"></span>
+  </footer>
+</div>
+
+<div class="ov" id="ov" hidden>
+  <aside class="dw" role="dialog" aria-modal="true" aria-labelledby="dwT">
+    <div class="dw-h"><h2 id="dwT">Abrir turno</h2><button class="btn" id="bFechar" type="button">Fechar</button></div>
+    <form id="form" novalidate>
+      <div class="fld">
+        <label for="fPref">Prefixo da equipe</label>
+        <input type="text" id="fPref" list="prefixos" autocomplete="off" placeholder="GOOE001M" maxlength="10">
+        <datalist id="prefixos"></datalist>
+        <div class="hint" id="fPrefHint">Ao digitar um prefixo da escala, horário e veículo já vêm preenchidos.</div>
+      </div>
+      <div class="two">
+        <div class="fld"><label for="fIni">Início</label><input type="time" id="fIni"></div>
+        <div class="fld"><label for="fFim">Fim</label><input type="time" id="fFim"></div>
+      </div>
+      <fieldset>
+        <legend class="lbl" style="letter-spacing:.04em;text-transform:none;font-size:13px">Tipo de veículo</legend>
+        <div class="opts">
+          <label class="opt sky"><input type="radio" name="tipo" id="tSky" value="SKY"><span class="slotSky"></span><span>SKY</span></label>
+          <label class="opt mult"><input type="radio" name="tipo" id="tMult" value="MULTSKIL"><span class="slotMult"></span><span>MULTSKIL</span></label>
+        </div>
+      </fieldset>
+      <div id="extraFields" class="extra-box" hidden>
+        <div class="fld">
+          <label for="fProc">Processo</label>
+          <select id="fProc">
+            <option value="">Escolha o processo</option>
+            <option>Comercial</option><option>Perdas</option><option>Equipe própria</option><option>Equipe fiscal</option><option>Outro</option>
+          </select>
+          <input type="text" id="fProcOutro" placeholder="Qual processo?" maxlength="40" hidden style="text-transform:none;font-family:var(--f-body)">
+        </div>
+        <div class="fld">
+          <label for="fEmp">Empresa <span style="font-weight:400">(opcional)</span></label>
+          <input type="text" id="fEmp" placeholder="Ex.: Equatorial, PSE, outra contratada" maxlength="40" style="text-transform:none;font-family:var(--f-body)">
+        </div>
+      </div>
+      <div class="err" id="fErr" role="alert"></div>
+      <button class="btn pri" id="bSalvar" type="submit" style="font-size:16px;padding:14px">Abrir turno no painel</button>
+    </form>
+    <div class="fld">
+      <div class="lbl">Turnos abertos agora</div>
+      <div class="lista" id="lista"></div>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script>
+/* ===== CONFIGURAÇÃO DO SUPABASE: cole aqui os dados do seu projeto ===== */
+const SUPABASE_URL = 'https://bjzvbjimrniooskmnieq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_CbJxIKHCnLXy-mWd9H9y4g_v0fVoEHO';
+/* ======================================================================= */
+const ESCALA = [{"id":"GOOE001M","tipo":"SKY","ini":360,"fim":960},{"id":"GOOE002M","tipo":"SKY","ini":360,"fim":960},{"id":"GOOE003M","tipo":"MULTSKIL","ini":360,"fim":960},{"id":"GOOE004M","tipo":"MULTSKIL","ini":360,"fim":960},{"id":"GOOE005M","tipo":"MULTSKIL","ini":360,"fim":960},{"id":"GOOE006M","tipo":"MULTSKIL","ini":360,"fim":960},{"id":"GOOE007M","tipo":"SKY","ini":360,"fim":960},{"id":"GOOE008M","tipo":"MULTSKIL","ini":420,"fim":1020},{"id":"GOOE009M","tipo":"SKY","ini":420,"fim":1020},{"id":"GOOE010M","tipo":"SKY","ini":420,"fim":1020},{"id":"GOOE011M","tipo":"SKY","ini":420,"fim":1020},{"id":"GOOE012M","tipo":"SKY","ini":420,"fim":1020},{"id":"GOOE013M","tipo":"MULTSKIL","ini":420,"fim":1020},{"id":"GOOE014M","tipo":"MULTSKIL","ini":420,"fim":1020},{"id":"GOOE015M","tipo":"MULTSKIL","ini":420,"fim":1020},{"id":"GOOE016M","tipo":"MULTSKIL","ini":420,"fim":1020},{"id":"GOOE017M","tipo":"SKY","ini":480,"fim":1080},{"id":"GOOE018M","tipo":"SKY","ini":480,"fim":1080},{"id":"GOOE019M","tipo":"MULTSKIL","ini":480,"fim":1080},{"id":"GOOE020M","tipo":"SKY","ini":480,"fim":1080},{"id":"GOOE021M","tipo":"MULTSKIL","ini":480,"fim":1080},{"id":"GOOE022M","tipo":"MULTSKIL","ini":480,"fim":1080},{"id":"GOOE023M","tipo":"SKY","ini":480,"fim":1080},{"id":"GOOE024M","tipo":"MULTSKIL","ini":480,"fim":1080},{"id":"GOOE025T","tipo":"SKY","ini":780,"fim":1380},{"id":"GOOE026T","tipo":"SKY","ini":780,"fim":1380},{"id":"GOOE027T","tipo":"SKY","ini":780,"fim":1380},{"id":"GOOE028T","tipo":"MULTSKIL","ini":780,"fim":1380},{"id":"GOOE029T","tipo":"MULTSKIL","ini":780,"fim":1380},{"id":"GOOE030T","tipo":"MULTSKIL","ini":420,"fim":1020},{"id":"GOOE031T","tipo":"MULTSKIL","ini":780,"fim":1380},{"id":"GOOE032T","tipo":"SKY","ini":780,"fim":1380},{"id":"GOOE033T","tipo":"MULTSKIL","ini":480,"fim":1080},{"id":"GOOE034T","tipo":"MULTSKIL","ini":780,"fim":1380},{"id":"GOOE035N","tipo":"SKY","ini":1260,"fim":420},{"id":"GOOE036N","tipo":"SKY","ini":1080,"fim":240},{"id":"GOOE037N","tipo":"SKY","ini":1080,"fim":240},{"id":"GOOE038N","tipo":"SKY","ini":1080,"fim":240},{"id":"GOOE039N","tipo":"SKY","ini":1080,"fim":240},{"id":"GOOE040N","tipo":"MULTSKIL","ini":1080,"fim":240},{"id":"GOOE041N","tipo":"MULTSKIL","ini":1080,"fim":240},{"id":"GOOE042N","tipo":"MULTSKIL","ini":1260,"fim":420},{"id":"GOOE043N","tipo":"MULTSKIL","ini":1080,"fim":240},{"id":"GOOE044N","tipo":"MULTSKIL","ini":1260,"fim":420}];
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const hm = d => pad(d.getHours())+':'+pad(d.getMinutes());
+const ICON={
+ SKY:'<svg class="ic" viewBox="0 4 170 100" aria-hidden="true"><path class="bm" d="M36 58 L92 24"/><rect class="f" x="12" y="64" width="104" height="22" rx="3"/><rect class="f" x="28" y="54" width="16" height="10"/><path class="f" d="M116 86 V50 H140 L158 66 V86 Z"/><path class="hh" d="M121 55 H138 L150 66 H121 Z"/><rect class="f" x="86" y="8" width="24" height="18" rx="2"/><circle class="f" cx="40" cy="90" r="11"/><circle class="hh" cx="40" cy="90" r="4"/><circle class="f" cx="66" cy="90" r="11"/><circle class="hh" cx="66" cy="90" r="4"/><circle class="f" cx="138" cy="90" r="11"/><circle class="hh" cx="138" cy="90" r="4"/></svg>',
+ MULTSKIL:'<svg class="ic" viewBox="0 18 180 82" aria-hidden="true"><rect class="f" x="26" y="22" width="96" height="3"/><rect class="f" x="26" y="29" width="96" height="3"/>'+[32,46,60,74,88,102,116].map(x=>'<rect class="f" x="'+x+'" y="22" width="3" height="10"/>').join('')+'<rect class="f" x="20" y="32" width="3" height="28"/><rect class="f" x="98" y="32" width="3" height="4"/><path class="f" d="M8 80 V60 H74 L78 40 Q80 36 86 36 H112 L132 54 L160 60 Q170 62 170 70 V80 Z"/><path class="hh" d="M85 41 H100 V54 H82 Z"/><path class="hh" d="M104 41 H110 L124 54 H104 Z"/><rect class="hh" x="72" y="60" width="2.5" height="18"/><circle class="hh" cx="38" cy="82" r="16"/><circle class="f" cx="38" cy="82" r="12"/><circle class="hh" cx="38" cy="82" r="4.5"/><circle class="hh" cx="142" cy="82" r="16"/><circle class="f" cx="142" cy="82" r="12"/><circle class="hh" cx="142" cy="82" r="4.5"/></svg>'
+};
+document.querySelector('.slotSky').outerHTML=ICON.SKY;
+document.querySelector('.slotMult').outerHTML=ICON.MULTSKIL;
+$('#prefixos').innerHTML=ESCALA.map(e=>`<option value="${e.id}">`).join('');
+
+let sb=null, turnos=[];
+const ativos = () => { const now=Date.now(); return turnos.filter(t=>!t.encerrado_em && Date.parse(t.inicio)<=now && Date.parse(t.fim)>now).sort((a,b)=>a.prefixo.localeCompare(b.prefixo)); };
+
+function render(){
+  const d=new Date();
+  $('#hora').textContent=hm(d);
+  const on=ativos();
+  const nx=l=>l.filter(t=>t.extra).length;
+  const sky=on.filter(t=>t.tipo==='SKY'), mult=on.filter(t=>t.tipo==='MULTSKIL');
+  const mNow=d.getHours()*60+d.getMinutes();
+  const naEscala=e=>e.ini<e.fim ? (mNow>=e.ini && mNow<e.fim) : (mNow>=e.ini || mNow<e.fim);
+  const prev=ESCALA.filter(naEscala);
+  const tSky=prev.filter(e=>e.tipo==='SKY').length, tMult=prev.filter(e=>e.tipo==='MULTSKIL').length;
+  // acumulado do dia (desde 00:00): previstas na escala até agora x equipes que abriram turno
+  const d0=new Date(d); d0.setHours(0,0,0,0);
+  const escDia=ESCALA.filter(e=>e.ini>e.fim || e.ini<=mNow);
+  const abrDia=turnos.filter(t=>!t.extra && Date.parse(t.inicio)<=d.getTime() && Math.min(Date.parse(t.fim),t.encerrado_em?Date.parse(t.encerrado_em):Infinity)>d0.getTime());
+  const uniq=l=>new Set(l.map(t=>t.prefixo)).size;
+  const extDia=turnos.filter(t=>t.extra && Date.parse(t.inicio)<=d.getTime() && Math.min(Date.parse(t.fim),t.encerrado_em?Date.parse(t.encerrado_em):Infinity)>d0.getTime());
+  const ACC={
+    SKY:{a:uniq(abrDia.filter(t=>t.tipo==='SKY')),p:escDia.filter(e=>e.tipo==='SKY').length,x:uniq(extDia.filter(t=>t.tipo==='SKY'))},
+    MULTSKIL:{a:uniq(abrDia.filter(t=>t.tipo==='MULTSKIL')),p:escDia.filter(e=>e.tipo==='MULTSKIL').length,x:uniq(extDia.filter(t=>t.tipo==='MULTSKIL'))}
+  };
+  $('#resumo').innerHTML=`<b>${on.length-nx(on)}</b> de ${prev.length} equipes em campo · previstas na escala às ${hm(d)} · acumulado do dia <b>${uniq(abrDia)}</b> de ${escDia.length}${nx(on)?` · <b style="color:var(--accent)">${nx(on)}</b> extra${nx(on)>1?'s':''}`:''}`;
+  const fins=on.map(t=>Date.parse(t.fim)).sort((a,b)=>a-b);
+  if(fins.length){const f=fins[0],n=fins.filter(x=>Math.abs(x-f)<60000).length;$('#prox').innerHTML=`Próxima troca <b>${hm(new Date(f))}</b> · saem ${n}`}
+  else $('#prox').textContent='';
+  const tile=t=>`<button class="tile${t.extra?' extra':''}" type="button" data-id="${t._id}"><span class="n">${esc(t.prefixo)}</span><span class="h">até ${hm(new Date(t.fim))}</span>${t.extra?`<span class="tag">Extra · ${esc(t.processo||'')}${t.empresa?' · '+esc(t.empresa):''}</span>`:''}</button>`;
+
+  const metade=(cls,titulo,nome,lst,tot)=>`<section class="metade ${cls}" aria-label="${nome}">
+    <div class="mh"><div><div class="mh-t">${titulo}</div><div class="mh-n">${lst.length-nx(lst)}<small> de ${tot}</small></div><div class="mh-p">previstas na escala às ${hm(d)}${(()=>{const f=tot-(lst.length-nx(lst));return f>0?` · <b class="falta">faltam ${f}</b>`:''})()}</div><div class="mh-acc">Acumulado do dia <b>${ACC[nome].a}</b> de ${ACC[nome].p}${ACC[nome].x?` · + ${ACC[nome].x} extra${ACC[nome].x>1?'s':''}`:''}</div>${nx(lst)?`<div class="mh-x">+ ${nx(lst)} extra${nx(lst)>1?'s':''}</div>`:''}</div>${ICON[nome]}</div>
+    ${lst.length?`<div class="tiles">${lst.map(tile).join('')}</div>`:`<div class="vazio">Nenhuma equipe ${nome} com turno aberto agora.</div>`}
+  </section>`;
+  $('#metades').innerHTML=metade('sky','SKY · CESTO AÉREO','SKY',sky,tSky)+metade('mult','MULTSKIL · CAMINHONETE','MULTSKIL',mult,tMult);
+  renderLista(on);
+  renderHoras();
+}
+function renderHoras(){
+  const now=new Date(), d0=new Date(now); d0.setHours(0,0,0,0);
+  const hNow=now.getHours(), W=1200,H=84,L=24,R=6,T=14,B=16, bw=(W-L-R)/24;
+  const fimReal=t=>Math.min(Date.parse(t.fim), t.encerrado_em?Date.parse(t.encerrado_em):Infinity);
+  const agora=now.getTime();
+  const abertos=turnos.filter(t=>!t.encerrado_em && Date.parse(t.fim)>agora);
+  const cont=[...Array(24)].map((_,h)=>{
+    const a=d0.getTime()+h*3600e3, b=a+3600e3;
+    if(h>hNow){ // previsto: pela escala de plantão
+      const m=h*60+30, esc=ESCALA.filter(e=>e.ini<e.fim ? (m>=e.ini&&m<e.fim) : (m>=e.ini||m<e.fim));
+      return {s:esc.filter(e=>e.tipo==='SKY').length, m:esc.filter(e=>e.tipo==='MULTSKIL').length};
+    }
+    const lst=abertos.filter(t=>Date.parse(t.inicio)<b && Date.parse(t.fim)>a);
+    return {s:lst.filter(t=>t.tipo==='SKY').length, m:lst.filter(t=>t.tipo==='MULTSKIL').length};
+  });
+  const linha=[...Array(hNow+1)].map((_,h)=>{
+    const a=d0.getTime()+h*3600e3, b=Math.min(a+3600e3,agora);
+    return turnos.filter(t=>Date.parse(t.inicio)<b && fimReal(t)>a).length;
+  });
+  const max=Math.max(5,Math.ceil(Math.max(...cont.map(c=>c.s+c.m),...linha)/5)*5);
+  const y=v=>T+(H-T-B)*(1-v/max);
+  const F='font-family="JetBrains Mono,monospace"';
+  let g='';
+  for(let v=0;v<=max;v+=max) g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" ${F}>${v}</text>`;
+  g+=`<rect x="${L+hNow*bw}" y="${T-6}" width="${bw}" height="${y(0)-T+6}" fill="var(--accent)" opacity=".12"/>`;
+  cont.forEach((c,h)=>{
+    const x=L+h*bw+4, w=bw-8, fut=h>hNow, op=fut?.38:1, tot=c.s+c.m, cur=h===hNow;
+    if(c.s) g+=`<rect x="${x}" y="${y(c.s)}" width="${w}" height="${y(0)-y(c.s)}" fill="var(--sky)" opacity="${op}"><title>${pad(h)}h · SKY: ${c.s}${fut?' (escala)':''}</title></rect>`;
+    if(c.m) g+=`<rect x="${x}" y="${y(tot)}" width="${w}" height="${y(c.s)-y(tot)}" fill="var(--mult)" opacity="${op}"><title>${pad(h)}h · MULTSKIL: ${c.m}${fut?' (escala)':''}</title></rect>`;
+    if(c.s&&c.m) g+=`<line x1="${x}" x2="${x+w}" y1="${y(c.s)}" y2="${y(c.s)}" stroke="var(--panel)" stroke-width="2"/>`;
+    if(tot) g+=`<text x="${x+w/2}" y="${y(tot)-4}" text-anchor="middle" font-size="${cur?13:11}" font-weight="${cur?700:500}" fill="${cur?'var(--accent)':'var(--muted)'}" ${F}>${tot}</text>`;
+    g+=`<text x="${x+w/2}" y="${H-4}" text-anchor="middle" font-size="11" font-weight="${cur?700:400}" fill="${cur?'var(--fg)':'var(--muted)'}" ${F}>${pad(h)}h</text>`;
+  });
+  const px=h=>L+h*bw+bw/2;
+  if(linha.some(v=>v)){
+    g+=`<polyline points="${linha.map((v,h)=>px(h)+','+y(v)).join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    linha.forEach((v,h)=>{g+=`<circle cx="${px(h)}" cy="${y(v)}" r="${h===hNow?4.5:3}" fill="var(--accent)" stroke="var(--panel)" stroke-width="1.5"><title>${pad(h)}h · ${v} turno(s) abertos no período, incluindo os já fechados</title></circle>`});
+  }
+  $('#chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Turnos ainda abertos por hora, empilhados por SKY e MULTSKIL, com linha dos turnos que estiveram abertos em cada hora">${g}</svg>`;
+}
+function renderLista(on){
+  $('#lista').innerHTML=on.length?on.map(t=>`<div class="li"><div><b>${esc(t.prefixo)}</b> <small>${t.tipo}${t.extra?' · extra '+esc(t.processo||''):''} · ${hm(new Date(t.inicio))}–${hm(new Date(t.fim))}</small></div><button class="btn danger" type="button" data-fechar="${t._id}">Encerrar</button></div>`).join(''):'<div class="hint">Nenhum turno aberto.</div>';
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* formulário */
+let modoExtra=false;
+function abrir(pref,extra){
+  modoExtra=!!extra;
+  $('#dwT').textContent=modoExtra?'Equipe extra':'Abrir turno';
+  $('#bSalvar').textContent=modoExtra?'Colocar equipe extra no painel':'Abrir turno no painel';
+  $('#extraFields').hidden=!modoExtra;
+  if(modoExtra){$('#fProc').value='';$('#fProcOutro').value='';$('#fProcOutro').hidden=true;$('#fEmp').value='';}
+  $('#ov').hidden=false; $('#fErr').textContent='';
+  const d=new Date(); $('#fIni').value=hm(d);
+  $('#fPref').value=pref||''; preencher(); $('#fPref').focus();
+}
+function fechar(){ $('#ov').hidden=true; }
+function preencher(){
+  const p=$('#fPref').value.trim().toUpperCase();
+  const e=ESCALA.find(x=>x.id===p);
+  if(e){
+    const f=e.fim; $('#fFim').value=pad(Math.floor(f/60))+':'+pad(f%60);
+    if(e.tipo==='SKY') $('#tSky').checked=true; else if(e.tipo==='MULTSKIL') $('#tMult').checked=true;
+    $('#fPrefHint').textContent='Na escala: '+pad(Math.floor(e.ini/60))+':'+pad(e.ini%60)+' às '+$('#fFim').value+' · '+(e.tipo||'sem tipo');
+  } else $('#fPrefHint').textContent=p?'Prefixo fora da escala: preencha horário e veículo.':'Ao digitar um prefixo da escala, horário e veículo já vêm preenchidos.';
+}
+$('#fPref').addEventListener('input',()=>{$('#fErr').textContent='';preencher()});
+['fIni','fFim'].forEach(id=>$('#'+id).addEventListener('input',()=>$('#fErr').textContent=''));
+document.querySelectorAll('input[name=tipo]').forEach(r=>r.addEventListener('change',()=>$('#fErr').textContent=''));
+
+$('#form').addEventListener('submit',async ev=>{
+  ev.preventDefault();
+  const pref=$('#fPref').value.trim().toUpperCase().replace(/\s+/g,'');
+  const tipo=(document.querySelector('input[name=tipo]:checked')||{}).value;
+  const ini=$('#fIni').value, fim=$('#fFim').value;
+  if(!/^[A-Z0-9]{6,10}$/.test(pref)) return erro('Digite o prefixo da equipe (ex.: GOOE001M).');
+  if(!ini||!fim) return erro('Preencha o horário de início e de fim.');
+  if(!tipo) return erro('Escolha o tipo de veículo: SKY ou MULTSKIL.');
+  if(!sb) return erro('O painel não está conectado ao banco. Confira a internet e recarregue a página.');
+  const now=new Date(), [hi,mi]=ini.split(':').map(Number), [hf,mf]=fim.split(':').map(Number);
+  const dIni=new Date(now); dIni.setHours(hi,mi,0,0);
+  if(dIni-now>6*3600e3) dIni.setDate(dIni.getDate()-1); // turno noturno lançado depois da meia-noite
+  const dFim=new Date(dIni); dFim.setHours(hf,mf,0,0); if(dFim<=dIni) dFim.setDate(dFim.getDate()+1);
+  if(dFim<=now) return erro('Esse horário de fim já passou. Confira início e fim.');
+  let processo='', empresa='';
+  if(modoExtra){
+    processo=$('#fProc').value==='Outro'?$('#fProcOutro').value.trim():$('#fProc').value;
+    empresa=$('#fEmp').value.trim();
+    if(!processo) return erro('Informe o processo da equipe extra (ex.: Comercial, Perdas).');
+  }
+  const dup=ativos().find(t=>t.prefixo===pref);
+  $('#bSalvar').disabled=true;
+  try{
+    const body={prefixo:pref,tipo,inicio:dIni.toISOString(),fim:dFim.toISOString(),encerrado_em:null,extra:modoExtra,processo:modoExtra?processo:null,empresa:modoExtra&&empresa?empresa:null};
+    const r = dup ? await sb.from('turnos').update(body).eq('id',dup._id) : await sb.from('turnos').insert(body);
+    if(r.error) throw r.error;
+    carregar();
+    toast(dup?pref+' atualizado no painel':(modoExtra?'Equipe extra '+pref+' no painel':'Turno de '+pref+' aberto'));
+    if(modoExtra){$('#fProc').value='';$('#fProcOutro').value='';$('#fProcOutro').hidden=true;$('#fEmp').value='';}
+    $('#fPref').value=''; preencher(); document.querySelectorAll('input[name=tipo]').forEach(r=>r.checked=false);
+  }catch(e){
+    erro('Não salvou: '+(e&&e.message||'erro desconhecido')+'. Tente de novo.');
+  }finally{$('#bSalvar').disabled=false}
+});
+function erro(t){$('#fErr').textContent=t}
+async function encerrar(id){
+  const t=turnos.find(x=>x._id===id); if(!t||!sb) return;
+  const r=await sb.from('turnos').update({encerrado_em:new Date().toISOString()}).eq('id',id);
+  if(r.error) toast('Não encerrou: '+r.error.message); else {toast('Turno de '+t.prefixo+' encerrado');carregar()}
+}
+let confirmando=null;
+document.addEventListener('click',ev=>{
+  const f=ev.target.closest('[data-fechar]');
+  if(f){ if(confirmando===f.dataset.fechar){confirmando=null;encerrar(f.dataset.fechar)} else {confirmando=f.dataset.fechar;f.textContent='Confirmar';setTimeout(()=>{if(confirmando===f.dataset.fechar){confirmando=null;f.textContent='Encerrar'}},4000)} return; }
+  const t=ev.target.closest('.tile'); if(t){const x=turnos.find(y=>y._id===t.dataset.id);abrir(x&&x.prefixo, x&&x.extra); if(x&&x.extra){const ops=['Comercial','Perdas','Equipe própria','Equipe fiscal'];if(ops.includes(x.processo))$('#fProc').value=x.processo;else{$('#fProc').value='Outro';$('#fProcOutro').hidden=false;$('#fProcOutro').value=x.processo||''}$('#fEmp').value=x.empresa||'';$('#tSky').checked=x.tipo==='SKY';$('#tMult').checked=x.tipo==='MULTSKIL';} return;}
+});
+$('#bAbrir').onclick=()=>abrir();
+$('#bExtra').onclick=()=>abrir('',true);
+$('#fProc').addEventListener('change',()=>{const o=$('#fProc').value==='Outro';$('#fProcOutro').hidden=!o;if(o)$('#fProcOutro').focus();$('#fErr').textContent=''});
+$('#bFechar').onclick=fechar;
+$('#ov').addEventListener('click',ev=>{if(ev.target.id==='ov')fechar()});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!$('#ov').hidden)fechar()});
+function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,3000)}
+
+/* conexão com o Supabase: tempo real + conferência a cada 30 s */
+let ultima=null, canal=null;
+function status(ok){const el=$('#live');el.dataset.ok=ok?'1':'0';el.querySelector('span').textContent=ok?'Ao vivo · atualizado '+(ultima?hm(ultima):''):'Reconectando…'}
+async function carregar(){
+  if(!sb) return;
+  const desde=new Date(Date.now()-2*864e5).toISOString();
+  const {data,error}=await sb.from('turnos').select('*').gte('fim',desde).order('inicio',{ascending:false}).limit(500);
+  if(error){status(false);const a=$('#avisoDb');a.hidden=false;a.textContent='Não consegui ler os turnos: '+error.message;return}
+  turnos=data.map(r=>({...r,_id:r.id})); ultima=new Date(); $('#avisoDb').hidden=true; status(true); render();
+}
+function assinar(){
+  if(canal) sb.removeChannel(canal);
+  canal=sb.channel('turnos-tv').on('postgres_changes',{event:'*',schema:'public',table:'turnos'},()=>carregar()).subscribe();
+}
+render();
+setInterval(render,30000);
+if(!window.supabase || SUPABASE_URL.includes('SEU-PROJETO') || SUPABASE_KEY.includes('SUA-CHAVE')){
+  const a=$('#avisoDb'); a.hidden=false;
+  a.textContent=!window.supabase?'Não carregou a biblioteca do Supabase. Confira a internet e recarregue.':'Falta configurar o Supabase: preencha SUPABASE_URL e SUPABASE_KEY no início do código.';
+  $('#bAbrir').disabled=true; $('#bExtra').disabled=true;
+}else{
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  carregar(); assinar();
+  setInterval(carregar,30000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){carregar();assinar()}});
+  window.addEventListener('online',()=>{carregar();assinar()});
+}
+if(location.hash==='#abrir') setTimeout(()=>abrir(),300);
+(async()=>{try{if('wakeLock' in navigator){await navigator.wakeLock.request('screen');document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible')try{await navigator.wakeLock.request('screen')}catch(e){}})}}catch(e){}})();
+</script>
+
+</body>
+</html>
