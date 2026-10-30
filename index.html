@@ -54,7 +54,8 @@ h1{margin:0;font-family:var(--f-disp);font-weight:800;font-size:clamp(30px,2.7vw
 .mh-n{font-family:var(--f-disp);font-weight:800;font-size:clamp(96px,10vw,190px);line-height:.82;color:#fff;font-variant-numeric:tabular-nums}
 .mh-n small{font-size:.32em;font-weight:600}
 .sky .mh-n small{color:var(--sky-dim)} .mult .mh-n small{color:var(--mult-dim)}
-.mh .ic{width:clamp(150px,15.6vw,300px);height:auto}
+.mh .ic{width:clamp(200px,21vw,410px);height:auto;flex:0 1 auto;min-width:150px}
+.mh-t{white-space:nowrap}
 .lista-wrap{flex:1;min-height:0;overflow:auto}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;align-content:start}
 .tile{border:0;border-radius:6px;padding:7px 10px;display:flex;flex-direction:column;gap:1px;text-align:left;color:var(--fg);font:inherit;cursor:pointer;width:100%}
@@ -84,7 +85,7 @@ h1{margin:0;font-family:var(--f-disp);font-weight:800;font-size:clamp(30px,2.7vw
   .zebra{height:8px}
   .metade{padding-block:12px;gap:10px}
   .mh-n{font-size:clamp(64px,11vh,150px)}
-  .mh .ic{width:clamp(110px,10vw,210px)}
+  .mh .ic{width:clamp(150px,14vw,290px)}
   .mh-p,.mh-acc{margin-top:3px;font-size:15px}
   .mh-acc{padding:2px 8px}
 }
@@ -108,6 +109,27 @@ footer{display:flex;align-items:center;gap:22px;padding:10px max(16px,2vw);backg
 .extra-box{display:grid;gap:14px;border:1px dashed var(--accent);border-radius:8px;padding:14px}
 select{font:600 17px var(--f-body);background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:12px;width:100%}
 .ic{display:block;flex:none}
+/* animação dos veículos (só nos desenhos grandes do topo de cada metade) */
+.ic g{transform-box:view-box}
+.ic .cn{fill:var(--c);stroke:var(--c);stroke-width:0}
+.ic .cn .fundo{opacity:.16} .ic .cn .fundo path{stroke-width:.9;fill:none}
+.ic .cn .perto{opacity:.28} .ic .cn > rect,.ic .cn .pista{opacity:.4}
+.mh .lanca{transform-origin:36px 58px;animation:lanca 7s ease-in-out infinite}
+.mh .cesto{transform-origin:92px 24px;animation:cesto 7s ease-in-out infinite}
+@keyframes lanca{0%,12%{transform:rotate(14deg)}45%,62%{transform:rotate(-8deg)}95%,100%{transform:rotate(14deg)}}
+@keyframes cesto{0%,12%{transform:rotate(-14deg)}45%,62%{transform:rotate(8deg)}95%,100%{transform:rotate(-14deg)}}
+.mh .carro{animation:sacode .9s ease-in-out infinite}
+@keyframes sacode{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.6px)}}
+.mh .roda{animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.mh .fundo{animation:passa 9s linear infinite}
+.mh .perto{animation:passa 4.5s linear infinite}
+.mh .pista{animation:pistaa .9s linear infinite}
+@keyframes passa{from{transform:translateX(0)}to{transform:translateX(-180px)}}
+@keyframes pistaa{from{transform:translateX(0)}to{transform:translateX(-30px)}}
+/* no formulário o cenário não aparece */
+.opt .cn{display:none}
+@media (prefers-reduced-motion:reduce){.mh .lanca,.mh .cesto,.mh .carro,.mh .roda,.mh .fundo,.mh .perto,.mh .pista{animation:none}}
 .ic .f{fill:var(--c)} .ic .hh{fill:var(--hole)} .ic .bm{stroke:var(--c);stroke-width:6;fill:none;stroke-linecap:round}
 .opt{--hole:var(--panel2)} .opt.sky{--c:var(--sky)} .opt.mult{--c:var(--mult)}
 .lbl{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -229,9 +251,27 @@ const ESCALA = [{"id":"GOOE001M","tipo":"SKY","ini":360,"fim":960},{"id":"GOOE00
 const $ = s => document.querySelector(s);
 const pad = n => String(n).padStart(2,'0');
 const hm = d => pad(d.getHours())+':'+pad(d.getMinutes());
+// cenário que passa atrás dos veículos: árvores, postes com fiação e pista
+const RODA=(cx,cy,r,h)=>`<g class="roda" style="transform-origin:${cx}px ${cy}px"><circle class="f" cx="${cx}" cy="${cy}" r="${r}"/><circle class="hh" cx="${cx}" cy="${cy}" r="${h}"/><rect class="hh" x="${cx-1.2}" y="${cy-r+1}" width="2.4" height="${r-h-1.5}"/><rect class="hh" x="${cx-1.2}" y="${cy+h+0.5}" width="2.4" height="${r-h-1.5}"/></g>`;
+const CENA=(g,w)=>{
+  const W=180; let fundo='', perto='';
+  for(let k=-1;k<3;k++){const o=k*W;
+    // postes e fiação (fundo)
+    [20,110].forEach(x=>{fundo+=`<rect x="${o+x-1.2}" y="${g-62}" width="2.4" height="62"/><rect x="${o+x-9}" y="${g-60}" width="18" height="2"/>`;});
+    fundo+=`<path d="M${o+11} ${g-58} Q${o+65} ${g-50} ${o+101} ${g-58} M${o+29} ${g-58} Q${o+83} ${g-50} ${o+119} ${g-58} M${o+101} ${g-58} Q${o+150} ${g-50} ${o+191} ${g-58} M${o+119} ${g-58} Q${o+168} ${g-50} ${o+209} ${g-58}" fill="none" stroke-width="0.9"/>`;
+    // árvores (mais perto, passam mais rápido)
+    [[55,1.7],[150,1.35]].forEach(([x,s])=>{perto+=`<rect x="${o+x-2}" y="${g-16*s}" width="4" height="${16*s}"/><circle cx="${o+x}" cy="${g-24*s}" r="${11*s}"/><circle cx="${o+x-7*s}" cy="${g-18*s}" r="${7*s}"/><circle cx="${o+x+7*s}" cy="${g-18*s}" r="${7*s}"/>`;});
+  }
+  let pista=''; for(let x=-60;x<3*W;x+=30) pista+=`<rect x="${x}" y="${g+1.5}" width="14" height="1.6"/>`;
+  return `<g class="cn"><g class="fundo">${fundo}</g><g class="perto">${perto}</g><rect x="-60" y="${g}" width="${w+120}" height="1"/><g class="pista">${pista}</g></g>`;
+};
 const ICON={
- SKY:'<svg class="ic" viewBox="0 4 170 100" aria-hidden="true"><path class="bm" d="M36 58 L92 24"/><rect class="f" x="12" y="64" width="104" height="22" rx="3"/><rect class="f" x="28" y="54" width="16" height="10"/><path class="f" d="M116 86 V50 H140 L158 66 V86 Z"/><path class="hh" d="M121 55 H138 L150 66 H121 Z"/><rect class="f" x="86" y="8" width="24" height="18" rx="2"/><circle class="f" cx="40" cy="90" r="11"/><circle class="hh" cx="40" cy="90" r="4"/><circle class="f" cx="66" cy="90" r="11"/><circle class="hh" cx="66" cy="90" r="4"/><circle class="f" cx="138" cy="90" r="11"/><circle class="hh" cx="138" cy="90" r="4"/></svg>',
- MULTSKIL:'<svg class="ic" viewBox="0 18 180 82" aria-hidden="true"><rect class="f" x="26" y="22" width="96" height="3"/><rect class="f" x="26" y="29" width="96" height="3"/>'+[32,46,60,74,88,102,116].map(x=>'<rect class="f" x="'+x+'" y="22" width="3" height="10"/>').join('')+'<rect class="f" x="20" y="32" width="3" height="28"/><rect class="f" x="98" y="32" width="3" height="4"/><path class="f" d="M8 80 V60 H74 L78 40 Q80 36 86 36 H112 L132 54 L160 60 Q170 62 170 70 V80 Z"/><path class="hh" d="M85 41 H100 V54 H82 Z"/><path class="hh" d="M104 41 H110 L124 54 H104 Z"/><rect class="hh" x="72" y="60" width="2.5" height="18"/><circle class="hh" cx="38" cy="82" r="16"/><circle class="f" cx="38" cy="82" r="12"/><circle class="hh" cx="38" cy="82" r="4.5"/><circle class="hh" cx="142" cy="82" r="16"/><circle class="f" cx="142" cy="82" r="12"/><circle class="hh" cx="142" cy="82" r="4.5"/></svg>'
+ SKY:(()=>{const g=101; return '<svg class="ic" viewBox="-30 4 230 100" aria-hidden="true">'+CENA(g,170)+
+   '<g class="carro"><g class="lanca"><path class="bm" d="M36 58 L92 24"/><g class="cesto"><rect class="f" x="86" y="8" width="24" height="18" rx="2"/></g></g><rect class="f" x="12" y="64" width="104" height="22" rx="3"/><rect class="f" x="28" y="54" width="16" height="10"/><path class="f" d="M116 86 V50 H140 L158 66 V86 Z"/><path class="hh" d="M121 55 H138 L150 66 H121 Z"/></g>'+
+   RODA(40,90,11,4)+RODA(66,90,11,4)+RODA(138,90,11,4)+'</svg>'})(),
+ MULTSKIL:(()=>{const g=96; return '<svg class="ic" viewBox="-30 18 240 82" aria-hidden="true">'+CENA(g,180)+
+   '<g class="carro"><rect class="f" x="26" y="22" width="96" height="3"/><rect class="f" x="26" y="29" width="96" height="3"/>'+[32,46,60,74,88,102,116].map(x=>'<rect class="f" x="'+x+'" y="22" width="3" height="10"/>').join('')+'<rect class="f" x="20" y="32" width="3" height="28"/><rect class="f" x="98" y="32" width="3" height="4"/><path class="f" d="M8 80 V60 H74 L78 40 Q80 36 86 36 H112 L132 54 L160 60 Q170 62 170 70 V80 Z"/><path class="hh" d="M85 41 H100 V54 H82 Z"/><path class="hh" d="M104 41 H110 L124 54 H104 Z"/><rect class="hh" x="72" y="60" width="2.5" height="18"/></g>'+
+   '<circle class="hh" cx="38" cy="82" r="16"/><circle class="hh" cx="142" cy="82" r="16"/>'+RODA(38,82,12,4.5)+RODA(142,82,12,4.5)+'</svg>'})()
 };
 document.querySelector('.slotSky').outerHTML=ICON.SKY;
 document.querySelector('.slotMult').outerHTML=ICON.MULTSKIL;
